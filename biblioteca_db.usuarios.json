@@ -1,0 +1,15 @@
+[{
+  "_id": {
+    "$oid": "3d6f5780ef6e8e2d6e8d1e3b"
+  },
+  "nome": "Rubens Donizette",
+  "id": 1,
+  "data_nascimento": "17/02/2001",
+  "cpf": "557.243.189-49",
+  "curso": "Engenharia de Software",
+  "periodo": 5,
+  "entidades": ["PET", "C.A", "Empresa Jr"],
+  "projetos": ["Projeto 1", "Projeto 2", "Projeto 3"],
+  "interesses": ["Desenvolvimento de Software", "Inteligência Artificial", "Machine Learning"]
+}
+]
