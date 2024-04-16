@@ -33,7 +33,7 @@ def editar_usuario():
         
 
 @app.route('/entidades', methods=['PUT'])
-def editar_usuario():
+def editar_entidade():
     filtro = { "id": 1}
 
     try:
@@ -59,7 +59,7 @@ def editar_usuario():
         
 
 @app.route('/empresas', methods=['PUT'])
-def editar_usuario():
+def editar_empresa():
     filtro = { "id": 1}
 
     try:
