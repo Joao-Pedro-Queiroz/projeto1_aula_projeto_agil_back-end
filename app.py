@@ -1,24 +1,88 @@
 from flask import Flask, request
 from flask_pymongo import PyMongo
 
-
-"""app = Flask("nome_da_minha_aplicacao")
-app.config["MONGO_URI"] = 
+app = Flask("nome_da_minha_aplicacao")
+app.config["MONGO_URI"] =
 mongo = PyMongo(app)
 
 
-@app.route('/usuarios', methods=['GET'])
-def get_all_users():
-    filtro = { "idade": { "$gt": 17 } }
-    projecao = {"_id": 0}
-    dados_usuarios = mongo.db.usuarios.find(filtro, projecao)
+@app.route('/usuarios', methods=['PUT'])
+def editar_usuario():
+    filtro = { "id": 1}
 
-    resp = {
-        "usuarios": list(dados_usuarios)
-    }
+    try:
+        projecao = {"_id": 0}
+        dados_usuarios = list(mongo.db.usuarios_proj_agil.find(filtro, projecao))
+    except:
+        return {"erro": "Erro no sistma"}, 500
+    else:
+        if dados_usuarios["usuarios_proj_agil"] == []:
+            return {"erro": "Usuário não encontrado"}, 404
+        else:
+            data = request.json
+            novos_dados = {
+                "$set": data
+            }
 
-    return resp, 200
+            try:
+                mongo.db.usuarios_proj_agil.update_one(filtro, novos_dados)
+            except:
+                return {"erro": "Dados inválidos"}, 400
+            
+            return {"mensagem": "Usuário atualizado com sucesso"}, 200
+        
+
+@app.route('/entidades', methods=['PUT'])
+def editar_entidade():
+    filtro = { "id": 1}
+
+    try:
+        projecao = {"_id": 0}
+        dados_entidades = list(mongo.db.entidades_proj_agil.find(filtro, projecao))
+    except:
+        return {"erro": "Erro no sistma"}, 500
+    else:
+        if dados_entidades["entidades_proj_agil"] == []:
+            return {"erro": "Entidades não encontrado"}, 404
+        else:
+            data = request.json
+            novos_dados = {
+                "$set": data
+            }
+
+            try:
+                mongo.db.entidades_proj_agil.update_one(filtro, novos_dados)
+            except:
+                return {"erro": "Dados inválidos"}, 400
+            
+            return {"mensagem": "Entidades atualizado com sucesso"}, 200
+        
+
+@app.route('/empresas', methods=['PUT'])
+def editar_empresa():
+    filtro = { "id": 1}
+
+    try:
+        projecao = {"_id": 0}
+        dados_empresas = list(mongo.db.empresas_proj_agil.find(filtro, projecao))
+    except:
+        return {"erro": "Erro no sistma"}, 500
+    else:
+        if dados_empresas["empresas_proj_agil"] == []:
+            return {"erro": "Empresas não encontrado"}, 404
+        else:
+            data = request.json
+            novos_dados = {
+                "$set": data
+            }
+
+            try:
+                mongo.db.empresas_proj_agil.update_one(filtro, novos_dados)
+            except:
+                return {"erro": "Dados inválidos"}, 404
+            
+            return {"mensagem": "Empresas atualizado com sucesso"}, 200
 
 
 if __name__ == '__main__':
-    app.run(debug=True)"""
+    app.run(debug=True)
