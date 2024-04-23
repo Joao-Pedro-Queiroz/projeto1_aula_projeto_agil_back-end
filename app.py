@@ -3,7 +3,7 @@ from flask_pymongo import PyMongo
 from datetime import date
 
 app = Flask(__name__)
-app.config["MONGO_URI"] = "mongodb+srv://gabrielprady1:RjNiPqINfNSV2xlX@cluster0.do8a1uo.mongodb.net/biblioteca_db"
+app.config["MONGO_URI"] = "mongodb+srv://gabrielprady1:lR6RItI2wEsXkTeY@cluster0.do8a1uo.mongodb.net/biblioteca_db"
 mongo = PyMongo(app)
 
 @app.route('/usuarios', methods=['GET'])
@@ -51,6 +51,59 @@ def get_all_recrutadores():
     # Retorna a resposta JSON e o código de status 200 (OK)
     return resp, 200
 
+# Função que busca usuarios através do campo "nome"
+@app.route('/usuarios/<string:nome>', methods=['GET'])
+def get_user_by_name(nome):
+    # Define um filtro para encontrar o usuário com o nome especificado
+    filtro = {
+        "nome": nome
+    }
+    # Define uma projeção para não incluir o campo "_id" nos resultados
+    projecao = {"_id": 0}
+    # Recupera os dados do usuário do banco de dados MongoDB usando o filtro e a projeção definidos
+    dados_usuarios = mongo.db.usuarios_proj_agil.find(filtro, projecao)
+    # Cria uma resposta JSON contendo o usuário encontrado
+    resp = {
+        "usuario": list(dados_usuarios),
+    }
+    # Retorna a resposta JSON e o código de status 200 (OK)
+    return resp, 200
+# Função que busca entidades através do campo "nome"
+@app.route('/entidades/<string:nome>', methods=['GET'])
+def get_entidade_by_name(nome):
+    # Define um filtro para encontrar a entidade com o nome especificado
+    filtro = {
+        "nome": nome
+    }
+    # Define uma projeção para não incluir o campo "_id" nos resultados
+    projecao = {"_id": 0}
+    # Recupera os dados da entidade do banco de dados MongoDB usando o filtro e a projeção definidos
+    dados_entidades = mongo.db.entidades_proj_agil.find(filtro, projecao)
+    # Cria uma resposta JSON contendo a entidade encontrada
+    resp = {
+        "entidade": list(dados_entidades),
+    }
+    # Retorna a resposta JSON e o código de status 200 (OK)
+    return resp, 200
+
+# Função que busca empresas através do campo "nome"
+@app.route('/empresas/<string:nome>', methods=['GET'])
+def get_empresa_by_name(nome):
+    # Define um filtro para encontrar a empresa com o nome especificado
+    filtro = {
+        "nome": nome
+    }
+    # Define uma projeção para não incluir o campo "_id" nos resultados
+    projecao = {"_id": 0}
+    # Recupera os dados da empresa do banco de dados MongoDB usando o filtro e a projeção definidos
+    dados_empresas = mongo.db.recrutadores_proj_agil.find(filtro, projecao)
+    # Cria uma resposta JSON contendo a empresa encontrada
+    resp = {
+        "empresa": list(dados_empresas),
+    }
+    # Retorna a resposta JSON e o código de status 200 (OK)
+    return resp, 200
+
 @app.route('/usuarios', methods=['DELETE'])
 def remover_usuario():
     # Define um filtro para encontrar o usuário com CPF "12345678901"
@@ -84,7 +137,6 @@ def remover_empresa(email):
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Empresa removida com sucesso"}, 200
 
-
 @app.route('/usuarios/<str:email>', methods=['PUT'])
 def editar_usuario(email):
     filtro = {"email": email}
@@ -109,7 +161,6 @@ def editar_usuario(email):
                 return {"erro": "Dados inválidos"}, 400
             
             return {"mensagem": "Usuário atualizado com sucesso"}, 200
-        
 
 @app.route('/entidades/<str:email>', methods=['PUT'])
 def editar_entidade(email):
@@ -135,7 +186,6 @@ def editar_entidade(email):
                 return {"erro": "Dados inválidos"}, 400
             
             return {"mensagem": "Entidades atualizado com sucesso"}, 200
-        
 
 @app.route('/empresas/<str:email>', methods=['PUT'])
 def editar_empresa(email):
@@ -161,7 +211,6 @@ def editar_empresa(email):
                 return {"erro": "Dados inválidos"}, 404
             
             return {"mensagem": "Empresas atualizado com sucesso"}, 200
-
 
 @app.route('/usuarios', methods=['POST'])
 def adicionar_usuario():
