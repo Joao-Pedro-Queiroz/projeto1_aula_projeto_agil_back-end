@@ -1,5 +1,6 @@
 from flask import Flask, request
 from flask_pymongo import PyMongo
+from datetime import date
 
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb+srv://gabrielprady1:lR6RItI2wEsXkTeY@cluster0.do8a1uo.mongodb.net/biblioteca_db"
@@ -125,20 +126,20 @@ def remover_entidade():
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Entidade removida com sucesso"}, 200
 
-@app.route('/empresas', methods=['DELETE'])
-def remover_empresa():
+@app.route('/empresas/<str:email>', methods=['DELETE'])
+def remover_empresa(email):
     # Define um filtro para encontrar a empresa com CNPJ "12345678901234"
     filtro = {
-        "id": 0
+        "email": email
     }
     # Remove a empresa do banco de dados MongoDB
     mongo.db.empresas_proj_agil.delete_one(filtro)
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Empresa removida com sucesso"}, 200
 
-@app.route('/usuarios', methods=['PUT'])
-def editar_usuario():
-    filtro = { "id": 1}
+@app.route('/usuarios/<str:email>', methods=['PUT'])
+def editar_usuario(email):
+    filtro = {"email": email}
 
     try:
         projecao = {"_id": 0}
@@ -161,9 +162,9 @@ def editar_usuario():
             
             return {"mensagem": "Usuário atualizado com sucesso"}, 200
 
-@app.route('/entidades', methods=['PUT'])
-def editar_entidade():
-    filtro = { "id": 1}
+@app.route('/entidades/<str:email>', methods=['PUT'])
+def editar_entidade(email):
+    filtro = {"email": email}
 
     try:
         projecao = {"_id": 0}
@@ -186,9 +187,9 @@ def editar_entidade():
             
             return {"mensagem": "Entidades atualizado com sucesso"}, 200
 
-@app.route('/empresas', methods=['PUT'])
-def editar_empresa():
-    filtro = { "id": 1}
+@app.route('/empresas/<str:email>', methods=['PUT'])
+def editar_empresa(email):
+    filtro = {"email": email}
 
     try:
         projecao = {"_id": 0}
@@ -244,7 +245,7 @@ def adicionar_usuario():
 @app.route('/entidades', methods=['POST'])
 def adicionar_entidade():
     # Define os dados do usuário a serem adicionados
-    usuario = {
+    entidade = {
             "apresentacao": "Entidade de teste 2",
             "area_atuacao": "557.243.189-49",
             "data_criacao": "17/02/2001",
@@ -264,29 +265,48 @@ def adicionar_entidade():
             "vice_presidente": "Engenharia de Software"
         }
     # Insere o usuário no banco de dados MongoDB
-    mongo.db.entidades_proj_agil.insert_one(usuario)
+    mongo.db.entidades_proj_agil.insert_one(entidade)
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
     return {"mensagem": "Entidade adicionada com sucesso"}, 201
 
 @app.route('/empresas', methods=['POST'])
 def adicionar_empresas():
-    # Define os dados do usuário a serem adicionados
-    usuario = {
-            "apresentacao": "Apresentação 1",
-            "cargo": "Diretor",
-            "cnpj": "123456789",
-            "email": "abc@gmail.com",
-            "empresa": "17/02/2001",
-            "id": 1,
+    empresa = request.json
+    nome = empresa.get("nome", "")
+    apresentacao = empresa.get("apresentacao", "")
+    cargo = empresa.get("cargo", "")
+    cnpj = empresa.get("cnpj", "")
+    email = empresa.get("email", "")
+    celular = empresa.get("celular", "")
+    linkedin = empresa.get("linkedin ", "")
+    site = empresa.get("site", "")
+    data_criacao = date.today()
+
+    if not nome or not apresentacao or not cargo or not cnpj or not email or not celular or not linkedin or not site:
+        return {"error": "Nome, apresentacao, cargo, cnpj, email, celular, linkedin e site são obrigatórios"}, 400
+    
+    if mongo.db.usuarios_aps_5.find_one(filter={"cnpj": cnpj}):
+        return {"error": "Id já existe"}, 409  
+    
+    empresa = {
+            "nome": nome,
+            "apresentacao": apresentacao,
+            "cargo": cargo,
+            "cnpj": cnpj,
+            "email": email,
+            "data_criacao": data_criacao,
             "info_contato": {
-                "celular": "123456789",
-                "linkedin": "www.linkedin.com",
-                "site": "www.site.com"
+                "celular": celular,
+                "linkedin": linkedin,
+                "site": site
             },
-            "nome": "Recrutador"
         }
-    # Insere o usuário no banco de dados MongoDB
-    mongo.db.recrutadores_proj_agil.insert_one(usuario)
+    try:
+        # Insere o usuário no banco de dados MongoDB
+        mongo.db.recrutadores_proj_agil.insert_one(empresa)
+    except:
+        return {"error": "Dados inválidos"}, 400
+    
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
     return {"mensagem": "Empresa adicionada com sucesso"}, 201
 
