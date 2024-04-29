@@ -341,5 +341,35 @@ def adicionar_empresas():
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
     return {"mensagem": "Empresa adicionada com sucesso"}, 201
 
+@app.route('/usuarios', methods=['POST'])
+def solicitar_recuperacao():
+   # Obter o e-mail do corpo da solicitação
+   dados = request.json
+   email_usuario = dados.get('email')
+  
+   if not email_usuario:
+       return {"erro": "Nenhum e-mail fornecido"}, 400
+
+
+   # Procurar usuário no banco de dados pelo e-mail
+   usuario = mongo.db.usuarios.find_one({"email": email_usuario})
+
+
+   if usuario:
+       # Definir o assunto e a mensagem do e-mail
+       assunto = "Recuperação de Senha"
+       mensagem = f"Sua senha é: {usuario['senha']}"
+
+
+       # Enviar e-mail através do endpoint enviar_email
+       try:
+           enviar_email(email_usuario, assunto, mensagem)
+           return {"mensagem": "E-mail de recuperação enviado com sucesso!"}, 200
+       except Exception as e:
+           return {"erro": "Erro ao enviar e-mail"}, 500
+   else:
+       # E-mail não encontrado no banco de dados
+       return {"erro": "E-mail não encontrado"}, 404
+
 if __name__:
     app.run(debug=True)
