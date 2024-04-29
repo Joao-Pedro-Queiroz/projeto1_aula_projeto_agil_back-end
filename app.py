@@ -1,10 +1,41 @@
 from flask import Flask, request
 from flask_pymongo import PyMongo
 from datetime import date
+from flask_mail import Mail, Message
+import os
 
+# Aplicação Flask e Mongo
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb+srv://gabrielprady1:lR6RItI2wEsXkTeY@cluster0.do8a1uo.mongodb.net/biblioteca_db"
 mongo = PyMongo(app)
+
+# Author: João Pedro Queiroz Viana
+# Co-author: Pedro Oliviere
+# Configurando Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_USERNAME'] = os.getenv("email_projeto_hub")
+app.config['MAIL_PASSWORD'] = os.getenv("senha_projeto_hub")
+
+# Inicialize o Mail
+mail = Mail(app)
+
+# Funçaõ de enviar email
+def enviar_email(email, assunto, mensagem):
+    destinatario = email
+    assunto = assunto
+    mensagem = mensagem
+
+    msg = Message(
+        subject=assunto,
+        sender=app.config['MAIL_USERNAME'],
+        recipients=[destinatario],
+        body=mensagem,
+    )
+
+    mail.send(msg)
+
 
 @app.route('/usuarios', methods=['GET'])
 def get_all_users():
