@@ -126,7 +126,7 @@ def remover_entidade():
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Entidade removida com sucesso"}, 200
 
-@app.route('/empresas/<str:email>', methods=['DELETE'])
+@app.route('/empresas/<string:email>', methods=['DELETE'])
 def remover_empresa(email):
     # Define um filtro para encontrar a empresa com CNPJ "12345678901234"
     filtro = {
@@ -137,7 +137,7 @@ def remover_empresa(email):
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Empresa removida com sucesso"}, 200
 
-@app.route('/usuarios/<str:email>', methods=['PUT'])
+@app.route('/usuarios/<string:email>', methods=['PUT'])
 def editar_usuario(email):
     filtro = {"email": email}
 
@@ -162,7 +162,7 @@ def editar_usuario(email):
             
             return {"mensagem": "Usuário atualizado com sucesso"}, 200
 
-@app.route('/entidades/<str:email>', methods=['PUT'])
+@app.route('/entidades/<string:email>', methods=['PUT'])
 def editar_entidade(email):
     filtro = {"email": email}
 
@@ -187,7 +187,7 @@ def editar_entidade(email):
             
             return {"mensagem": "Entidades atualizado com sucesso"}, 200
 
-@app.route('/empresas/<str:email>', methods=['PUT'])
+@app.route('/empresas/<string:email>', methods=['PUT'])
 def editar_empresa(email):
     filtro = {"email": email}
 
