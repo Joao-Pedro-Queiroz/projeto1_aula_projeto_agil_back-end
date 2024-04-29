@@ -1,7 +1,8 @@
-from flask import Flask, request
+from flask import Flask, Response, request, abort
 from flask_pymongo import PyMongo
 from datetime import date
 from flask_mail import Mail, Message
+from flask_basicauth import BasicAuth
 import os
 
 # Aplicação Flask e Mongo
@@ -9,8 +10,6 @@ app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb+srv://gabrielprady1:lR6RItI2wEsXkTeY@cluster0.do8a1uo.mongodb.net/biblioteca_db"
 mongo = PyMongo(app)
 
-# Author: João Pedro Queiroz Viana
-# Co-author: Pedro Oliviere
 # Configurando Flask-Mail
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
@@ -20,6 +19,40 @@ app.config['MAIL_PASSWORD'] = os.getenv("senha_projeto_hub")
 
 # Inicialize o Mail
 mail = Mail(app)
+
+# Initialize Flask-BasicAuth
+basic_auth = BasicAuth(app)
+
+def check_auth(email, senha):
+    """Verifica se um nome de usuário e senha são válidos no MongoDB."""
+    filtro_ = {"email": email, "senha": senha}
+    projection = {"_id": 0, "senha": 0}
+    usuario = mongo.db.usuarios.find_one(filter=filtro_,
+                                         projection=projection)
+    
+    # Se não retornou nada, usuário com essa senha não foi encontrado, ou seja, não autenticado
+    if not usuario:
+        return False
+
+    return True # Usuário autenticado
+
+@app.route('/')
+def secret_page():
+    auth = request.authorization # Ja faz decodifica a base 64 e transforma de bytes em string
+    if not auth or not check_auth(auth.username, auth.senha):
+        return Response('Você precisa se autenticar.', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
+    
+        # aqui você coloca toda a lógica que só pode ser acessada por usuários autenticados
+    # e o retorno é o que será exibido para o usuário, subtitua esse retorno pelo que você deseja
+    return {"msg": "Você está autenticado! "} 
+
+# Apply authentication to all routes
+@app.before_request
+def before_request():
+    if not request.endpoint:
+        abort(404)
+    if request.endpoint != 'static':
+        check_auth()
 
 # Funçaõ de enviar email
 def enviar_email(email, assunto, mensagem):
@@ -156,7 +189,6 @@ def remover_entidade():
     mongo.db.entidades_proj_agil.delete_one(filtro)
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Entidade removida com sucesso"}, 200
-print('hahahahahahahahaha')
 
 @app.route('/empresas/<string:email>', methods=['DELETE'])
 def remover_empresa(email):
@@ -169,8 +201,19 @@ def remover_empresa(email):
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Empresa removida com sucesso"}, 200
 
+def get_current_user():
+    auth = request.authorization
+    if not auth:
+        return None
+    return mongo.db.usuarios.find_one({"email": auth.email, "senha": auth.senha})
+
 @app.route('/usuarios/<string:email>', methods=['PUT'])
 def editar_usuario(email):
+
+    current_user = get_current_user()
+    if current_user['email'] != email:
+        return {"erro": "Acesso não autorizado"}, 403
+    
     filtro = {"email": email}
 
     try:
@@ -196,6 +239,10 @@ def editar_usuario(email):
 
 @app.route('/entidades/<string:email>', methods=['PUT'])
 def editar_entidade(email):
+    current_user = get_current_user()
+    if current_user['email'] != email:
+        return {"erro": "Acesso não autorizado"}, 403
+    
     filtro = {"email": email}
 
     try:
@@ -221,6 +268,10 @@ def editar_entidade(email):
 
 @app.route('/empresas/<string:email>', methods=['PUT'])
 def editar_empresa(email):
+    current_user = get_current_user()
+    if current_user['email'] != email:
+        return {"erro": "Acesso não autorizado"}, 403
+    
     filtro = {"email": email}
 
     try:
@@ -249,6 +300,8 @@ def adicionar_usuario():
     # Define os dados do usuário a serem adicionados
     usuario = {
       "cpf": "9999999999",
+      "email": "gabriel@gmail.com",
+      "senha": "123456",
       "curso": "Ciência da Computação",
       "data_nascimento": "17/02/2002",
       "entidades": [
@@ -278,6 +331,8 @@ def adicionar_usuario():
 def adicionar_entidade():
     # Define os dados do usuário a serem adicionados
     entidade = {
+            "email": "entidade@gmail.com",
+            "senha": "123456",
             "apresentacao": "Entidade de teste 2",
             "area_atuacao": "557.243.189-49",
             "data_criacao": "17/02/2001",
@@ -305,6 +360,8 @@ def adicionar_entidade():
 def adicionar_empresas():
     empresa = request.json
     nome = empresa.get("nome", "")
+    email = empresa.get("email", "")
+    senha = empresa.get("senha", "")
     apresentacao = empresa.get("apresentacao", "")
     cargo = empresa.get("cargo", "")
     cnpj = empresa.get("cnpj", "")
@@ -321,6 +378,8 @@ def adicionar_empresas():
         return {"error": "Id já existe"}, 409  
     
     empresa = {
+            "email": email,
+            "senha": senha,
             "nome": nome,
             "apresentacao": apresentacao,
             "cargo": cargo,
