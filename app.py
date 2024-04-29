@@ -156,6 +156,7 @@ def remover_entidade():
     mongo.db.entidades_proj_agil.delete_one(filtro)
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Entidade removida com sucesso"}, 200
+print('hahahahahahahahaha')
 
 @app.route('/empresas/<string:email>', methods=['DELETE'])
 def remover_empresa(email):
