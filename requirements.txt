@@ -13,3 +13,4 @@ streamlit
 pymongo
 Flask-PyMongo
 web-pdb
+flask_mail
