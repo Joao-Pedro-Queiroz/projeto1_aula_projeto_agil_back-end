@@ -1,41 +1,13 @@
 from flask import Flask, Response, jsonify, request, abort
 from flask_pymongo import PyMongo
 from datetime import date
-from flask_mail import Mail, Message
-from flask_basicauth import BasicAuth
-import os 
+import os
 from auth import requires_auth, hash_password
-
 
 # Aplicação Flask e Mongo
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb+srv://gabrielprady1:lR6RItI2wEsXkTeY@cluster0.do8a1uo.mongodb.net/biblioteca_db"
 mongo = PyMongo(app)
-
-# Configurando Flask-Mail
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-app.config['MAIL_PORT'] = 465
-app.config['MAIL_USE_SSL'] = True
-app.config['MAIL_USERNAME'] = os.getenv("email_projeto_hub")
-app.config['MAIL_PASSWORD'] = os.getenv("senha_projeto_hub")
-
-# Inicialize o Mail
-mail = Mail(app)
-
-# Funçaõ de enviar email
-def enviar_email(email, assunto, mensagem):
-    destinatario = email
-    assunto = assunto
-    mensagem = mensagem
-
-    msg = Message(
-        subject=assunto,
-        sender=app.config['MAIL_USERNAME'],
-        recipients=[destinatario],
-        body=mensagem,
-    )
-
-    mail.send(msg)
 
 # Função para obter o usuário atual
 def get_current_user():
@@ -304,30 +276,24 @@ def adicionar_entidade():
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
     return {"mensagem": "Entidade adicionada com sucesso"}, 201
 
-@app.route('/usuarios', methods=['POST'])
+
+@app.route('/senha', methods=['GET'])
 def solicitar_recuperacao():
-   # Obter o e-mail do corpo da solicitação
-   dados = request.json
-   email_usuario = dados.get('email')
-    # Verificar se o e-mail foi fornecido
-   if not email_usuario:
+    # Obter o e-mail do corpo da solicitação
+    email_usuario = request.args.get('email', '')
+  
+    if not email_usuario:
        return {"erro": "Nenhum e-mail fornecido"}, 400
-   # Procurar usuário no banco de dados pelo e-mail
-   usuario = mongo.db.usuarios.find_one({"email": email_usuario})
-   if usuario:
-       # Definir o assunto e a mensagem do e-mail
-       assunto = "Recuperação de Senha"
-       mensagem = f"Sua senha é: {usuario['password']}"
-       # Enviar e-mail através do endpoint enviar_email
-       try:
-           enviar_email(email_usuario, assunto, mensagem)
-           return {"mensagem": "E-mail de recuperação enviado com sucesso!"}, 200
-       except Exception as e:
-           return {"erro": "Erro ao enviar e-mail"}, 500
-   else:
-       # E-mail não encontrado no banco de dados
-       return {"erro": "E-mail não encontrado"}, 404
-   
+    
+    if not mongo.db.usuarios_proj_agil.find_one({"email": email_usuario}):
+        return {"error": "Usuário não existe"}, 404
+
+    # Enviar e-mail através do endpoint enviar_email
+    try:
+        usuario = list(mongo.db.usuarios_proj_agil.find_one({"email": email_usuario}))
+        return usuario, 200
+    except Exception as e:
+        return {"erro": "Erro ao enviar e-mail"}, 500
 
 # Rota pública que não requer autenticação
 @app.route('/')
