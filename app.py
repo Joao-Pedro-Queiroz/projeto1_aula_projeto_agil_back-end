@@ -198,17 +198,18 @@ def editar_entidade(email):
 # Função para adicionar um novo usuário
 def adicionar_usuario():
     # Obter os dados do corpo da solicitação
-    nome = request.json.get("nome", "")
-    email = request.json.get("email", "")
-    password = request.json.get("password", "")
-    curso = request.json.get("curso", "")
-    data_nascimento = request.json.get("data_nascimento", "")
-    cpf = request.json.get("cpf", "")
-    entidades = request.json.get("entidades", [])
-    id = request.json.get("id", "")
-    interesses = request.json.get("interesses", [])
-    periodo = request.json.get("periodo", "")
-    projetos = request.json.get("projetos", [])
+    usuario = request.json
+    nome = usuario.get("nome", "")
+    email = usuario.get("email", "")
+    password = usuario.get("password", "")
+    curso = usuario.get("curso", "")
+    data_nascimento = usuario.get("data_nascimento", "")
+    cpf = usuario.get("cpf", "")
+    entidades = usuario.get("entidades", [])
+    id = usuario.get("id", "")
+    interesses = usuario.get("interesses", [])
+    periodo = usuario.get("periodo", "")
+    projetos = usuario.get("projetos", [])
     # Verificar se os campos obrigatórios foram fornecidos
     if not nome or not email or not password or not curso or not data_nascimento or not cpf or not id or not periodo or not interesses:
         return {"error": "Nome, usuario, email, password, curso, data_nascimento, cpf, id e periodo são obrigatórios"}, 400
