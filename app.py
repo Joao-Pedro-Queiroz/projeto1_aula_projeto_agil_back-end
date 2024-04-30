@@ -201,7 +201,7 @@ def adicionar_usuario():
     usuario = request.json
     nome = usuario.get("nome", "")
     email = usuario.get("email", "")
-    password = usuario.get("password", "")
+    """password = usuario.get("password", "")
     curso = usuario.get("curso", "")
     data_nascimento = usuario.get("data_nascimento", "")
     cpf = usuario.get("cpf", "")
@@ -212,26 +212,17 @@ def adicionar_usuario():
     projetos = usuario.get("projetos", [])
     # Verificar se os campos obrigatórios foram fornecidos
     if not nome or not email or not password or not curso or not data_nascimento or not cpf or not id or not periodo or not interesses:
-        return {"error": "Nome, usuario, email, password, curso, data_nascimento, cpf, id e periodo são obrigatórios"}, 400
+        return {"error": "Nome, usuario, email, password, curso, data_nascimento, cpf, id e periodo são obrigatórios"}, 400"""
     # Verificar se o CPF já existe no banco de dados
-    if mongo.db.usuarios_proj_agil.find_one(filter={"cpf": cpf}):
-        return {"error": "Id já existe"}, 409
+    """if mongo.db.usuarios_proj_agil.find_one(filter={"cpf": cpf}):
+        return {"error": "Id já existe"}, 409"""
     # Gerar um hash SHA-256 da senha
-    hashed_password = hash_password(password)
+    # hashed_password = hash_password(password)
     # Criar um dicionário contendo os dados do usuário
     usuario = {
                 "nome": nome, 
                 "email": email, 
-                "password": hashed_password, 
-                "curso": curso, 
-                "data_nascimento": data_nascimento, 
-                "cpf": cpf, 
-                "id": id, 
-                "periodo": periodo, 
-                "entidades": entidades, 
-                "interesses": interesses, 
-                "projetos": projetos
-            }
+    }
     # Insere o usuário no banco de dados MongoDB
     mongo.db.usuarios_proj_agil.insert_one(usuario)
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
