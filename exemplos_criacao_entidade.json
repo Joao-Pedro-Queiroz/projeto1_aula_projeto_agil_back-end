@@ -1,0 +1,21 @@
+{
+             "email": "entidade@gmail.com",
+             "password": "123456",
+             "apresentacao": "Entidade de teste 2",
+             "area_atuacao": "557.243.189-49",
+             "data_criacao": "17/02/2001",
+             "id": 1,
+             "info_contato": {
+                 "email": "abc@gmail.com",
+                 "linkedin": "linkedin.com",
+                 "telefone": "123456789"
+             },
+             "nome": "Entidade",
+             "presidente": "Gabriel Prady",
+             "projetos": [
+                 "Projeto 1",
+                 "Projeto 2",
+                 "Projeto 3"
+             ],
+             "vice_presidente": "Engenharia de Software"
+         }

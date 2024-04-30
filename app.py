@@ -1,9 +1,11 @@
-from flask import Flask, Response, request, abort
+from flask import Flask, Response, jsonify, request, abort
 from flask_pymongo import PyMongo
 from datetime import date
 from flask_mail import Mail, Message
 from flask_basicauth import BasicAuth
-import os
+import os 
+from auth import requires_auth, hash_password
+
 
 # Aplicação Flask e Mongo
 app = Flask(__name__)
@@ -20,40 +22,6 @@ app.config['MAIL_PASSWORD'] = os.getenv("senha_projeto_hub")
 # Inicialize o Mail
 mail = Mail(app)
 
-# Initialize Flask-BasicAuth
-basic_auth = BasicAuth(app)
-
-def check_auth(email, senha):
-    """Verifica se um nome de usuário e senha são válidos no MongoDB."""
-    filtro_ = {"email": email, "senha": senha}
-    projection = {"_id": 0, "senha": 0}
-    usuario = mongo.db.usuarios.find_one(filter=filtro_,
-                                         projection=projection)
-    
-    # Se não retornou nada, usuário com essa senha não foi encontrado, ou seja, não autenticado
-    if not usuario:
-        return False
-
-    return True # Usuário autenticado
-
-@app.route('/')
-def secret_page():
-    auth = request.authorization # Ja faz decodifica a base 64 e transforma de bytes em string
-    if not auth or not check_auth(auth.username, auth.senha):
-        return Response('Você precisa se autenticar.', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
-    
-        # aqui você coloca toda a lógica que só pode ser acessada por usuários autenticados
-    # e o retorno é o que será exibido para o usuário, subtitua esse retorno pelo que você deseja
-    return {"msg": "Você está autenticado! "} 
-
-# Apply authentication to all routes
-@app.before_request
-def before_request():
-    if not request.endpoint:
-        abort(404)
-    if request.endpoint != 'static':
-        check_auth()
-
 # Funçaõ de enviar email
 def enviar_email(email, assunto, mensagem):
     destinatario = email
@@ -69,8 +37,20 @@ def enviar_email(email, assunto, mensagem):
 
     mail.send(msg)
 
+# Função para obter o usuário atual
+def get_current_user():
+    # Obtem as credenciais de autenticação do cabeçalho da solicitação
+    auth = request.authorization
+    if not auth: # Se não houver credenciais de autenticação, retorne None
+        return None
+    # Procura o usuário no banco de dados pelo e-mail fornecido
+    return mongo.db.usuarios.find_one({"email": auth.email})
+
+
+##### FUNÇÕES DO TIPO GET #####
 
 @app.route('/usuarios', methods=['GET'])
+@requires_auth
 def get_all_users():
     filtro = {
     }
@@ -100,23 +80,10 @@ def get_all_entidades():
     # Retorna a resposta JSON e o código de status 200 (OK)
     return resp, 200
 
-@app.route('/empresas', methods=['GET'])
-def get_all_recrutadores():
-    filtro = {
-    }
-    # Define uma projeção para não incluir o campo "_id" nos resultados
-    projecao = {"_id": 0}
-    # Recupera os dados dos usuários do banco de dados MongoDB usando o filtro e a projeção definidos
-    dados_empresas = mongo.db.recrutadores_proj_agil.find(filtro, projecao)
-    # Cria uma resposta JSON contendo os usuários encontrados
-    resp = {
-        "usuarios": list(dados_empresas),
-    }
-    # Retorna a resposta JSON e o código de status 200 (OK)
-    return resp, 200
 
 # Função que busca usuarios através do campo "nome"
 @app.route('/usuarios/<string:nome>', methods=['GET'])
+@requires_auth
 def get_user_by_name(nome):
     # Define um filtro para encontrar o usuário com o nome especificado
     filtro = {
@@ -132,6 +99,7 @@ def get_user_by_name(nome):
     }
     # Retorna a resposta JSON e o código de status 200 (OK)
     return resp, 200
+
 # Função que busca entidades através do campo "nome"
 @app.route('/entidades/<string:nome>', methods=['GET'])
 def get_entidade_by_name(nome):
@@ -150,26 +118,17 @@ def get_entidade_by_name(nome):
     # Retorna a resposta JSON e o código de status 200 (OK)
     return resp, 200
 
-# Função que busca empresas através do campo "nome"
-@app.route('/empresas/<string:nome>', methods=['GET'])
-def get_empresa_by_name(nome):
-    # Define um filtro para encontrar a empresa com o nome especificado
-    filtro = {
-        "nome": nome
-    }
-    # Define uma projeção para não incluir o campo "_id" nos resultados
-    projecao = {"_id": 0}
-    # Recupera os dados da empresa do banco de dados MongoDB usando o filtro e a projeção definidos
-    dados_empresas = mongo.db.recrutadores_proj_agil.find(filtro, projecao)
-    # Cria uma resposta JSON contendo a empresa encontrada
-    resp = {
-        "empresa": list(dados_empresas),
-    }
-    # Retorna a resposta JSON e o código de status 200 (OK)
-    return resp, 200
+
+##### FUNÇÕES DO TIPO DELETE #####
 
 @app.route('/usuarios', methods=['DELETE'])
-def remover_usuario():
+@requires_auth
+def remover_usuario(email):
+    # Obtem o usuário atual
+    current_user = get_current_user()
+    # Verifica se o usuário atual é o mesmo que está tentando excluir
+    if current_user['email'] != email:
+        return {"erro": "Acesso não autorizado"}, 403
     # Define um filtro para encontrar o usuário com CPF "12345678901"
     filtro = {
         "id": 2
@@ -180,7 +139,13 @@ def remover_usuario():
     return {"mensagem": "Usuário removido com sucesso"}, 200
 
 @app.route('/entidades', methods=['DELETE'])
-def remover_entidade():
+@requires_auth
+def remover_entidade(email):
+    # Obtem o usuário atual
+    current_user = get_current_user()
+    # Verifica se o usuário atual é o mesmo que está tentando excluir
+    if current_user['email'] != email:
+        return {"erro": "Acesso não autorizado"}, 403
     # Define um filtro para encontrar a entidade com CNPJ "12345678901234"
     filtro = {
         "id": 0
@@ -190,237 +155,169 @@ def remover_entidade():
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Entidade removida com sucesso"}, 200
 
-@app.route('/empresas/<string:email>', methods=['DELETE'])
-def remover_empresa(email):
-    # Define um filtro para encontrar a empresa com CNPJ "12345678901234"
-    filtro = {
-        "email": email
-    }
-    # Remove a empresa do banco de dados MongoDB
-    mongo.db.empresas_proj_agil.delete_one(filtro)
-    # Retorna uma mensagem de sucesso e o código de status 200 (OK)
-    return {"mensagem": "Empresa removida com sucesso"}, 200
 
-def get_current_user():
-    auth = request.authorization
-    if not auth:
-        return None
-    return mongo.db.usuarios.find_one({"email": auth.email, "senha": auth.senha})
+##### FUNÇÕES DO TIPO PUT #####
 
 @app.route('/usuarios/<string:email>', methods=['PUT'])
+@requires_auth
 def editar_usuario(email):
-
+    # Obtem o usuário atual
     current_user = get_current_user()
+    # Verifica se o usuário atual é o mesmo que está tentando editar
     if current_user['email'] != email:
         return {"erro": "Acesso não autorizado"}, 403
-    
+    # Define um filtro para encontrar o usuário com o e-mail especificado
     filtro = {"email": email}
-
-    try:
+    try: # Tente acessar o banco de dados para recuperar os dados do usuário
+        # Define uma projeção para não incluir o campo "_id" nos resultados
         projecao = {"_id": 0}
+        # Recupera os dados do usuário do banco de dados MongoDB usando o filtro e a projeção definidos
         dados_usuarios = list(mongo.db.usuarios_proj_agil.find(filtro, projecao))
-    except:
+    except: # Se ocorrer um erro ao acessar o banco de dados, retorne um erro 500 (Erro interno do servidor)
         return {"erro": "Erro no sistma"}, 500
-    else:
-        if dados_usuarios["usuarios_proj_agil"] == []:
+    else: # Se os dados do usuário forem encontrados
+        if dados_usuarios["usuarios_proj_agil"] == []:# Se o usuário não for encontrado, retorne um erro 404 (Não encontrado)
             return {"erro": "Usuário não encontrado"}, 404
-        else:
+        else: # Se o usuário for encontrado
             data = request.json
             novos_dados = {
                 "$set": data
             }
-
-            try:
+            try: # Tente atualizar os dados do usuário no banco de dados
                 mongo.db.usuarios_proj_agil.update_one(filtro, novos_dados)
-            except:
+            except: # Se ocorrer um erro ao atualizar os dados do usuário, retorne um erro 400 (Solicitação inválida)
                 return {"erro": "Dados inválidos"}, 400
-            
             return {"mensagem": "Usuário atualizado com sucesso"}, 200
 
 @app.route('/entidades/<string:email>', methods=['PUT'])
+@requires_auth
 def editar_entidade(email):
+    # Obtem o usuário atual
     current_user = get_current_user()
-    if current_user['email'] != email:
+    if current_user['email'] != email: # Verifica se o usuário atual é o mesmo que está tentando editar
         return {"erro": "Acesso não autorizado"}, 403
-    
+    # Define um filtro para encontrar a entidade com o e-mail especificado
     filtro = {"email": email}
-
+    # Tente acessar o banco de dados para recuperar os dados da entidade
     try:
         projecao = {"_id": 0}
         dados_entidades = list(mongo.db.entidades_proj_agil.find(filtro, projecao))
-    except:
+    except: # Se ocorrer um erro ao acessar o banco de dados, retorne um erro 500 (Erro interno do servidor)
         return {"erro": "Erro no sistma"}, 500
-    else:
+    else: # Se os dados da entidade forem encontrados
         if dados_entidades["entidades_proj_agil"] == []:
             return {"erro": "Entidades não encontrado"}, 404
-        else:
+        else: # Se a entidade for encontrada
             data = request.json
             novos_dados = {
                 "$set": data
             }
-
-            try:
+            try: # Tente atualizar os dados da entidade no banco de dados
                 mongo.db.entidades_proj_agil.update_one(filtro, novos_dados)
-            except:
+            except: # Se ocorrer um erro ao atualizar os dados da entidade, retorne um erro 400 (Solicitação inválida)
                 return {"erro": "Dados inválidos"}, 400
-            
+            # Retorna uma mensagem de sucesso e o código de status 200 (OK)
             return {"mensagem": "Entidades atualizado com sucesso"}, 200
 
-@app.route('/empresas/<string:email>', methods=['PUT'])
-def editar_empresa(email):
-    current_user = get_current_user()
-    if current_user['email'] != email:
-        return {"erro": "Acesso não autorizado"}, 403
-    
-    filtro = {"email": email}
 
-    try:
-        projecao = {"_id": 0}
-        dados_empresas = list(mongo.db.empresas_proj_agil.find(filtro, projecao))
-    except:
-        return {"erro": "Erro no sistma"}, 500
-    else:
-        if dados_empresas["empresas_proj_agil"] == []:
-            return {"erro": "Empresas não encontrado"}, 404
-        else:
-            data = request.json
-            novos_dados = {
-                "$set": data
-            }
-
-            try:
-                mongo.db.empresas_proj_agil.update_one(filtro, novos_dados)
-            except:
-                return {"erro": "Dados inválidos"}, 404
-            
-            return {"mensagem": "Empresas atualizado com sucesso"}, 200
+##### FUNÇÕES DO TIPO POST #####
 
 @app.route('/usuarios', methods=['POST'])
+# Função para adicionar um novo usuário
 def adicionar_usuario():
-    # Define os dados do usuário a serem adicionados
+    # Obter os dados do corpo da solicitação
+    nome = request.json.get("nome", "")
+    email = request.json.get("email", "")
+    password = request.json.get("password", "")
+    curso = request.json.get("curso", "")
+    data_nascimento = request.json.get("data_nascimento", "")
+    cpf = request.json.get("cpf", "")
+    entidades = request.json.get("entidades", [])
+    id = request.json.get("id", "")
+    interesses = request.json.get("interesses", [])
+    periodo = request.json.get("periodo", "")
+    projetos = request.json.get("projetos", [])
+    # Verificar se os campos obrigatórios foram fornecidos
+    if not nome or not email or not password or not curso or not data_nascimento or not cpf or not id or not periodo or not interesses:
+        return {"error": "Nome, usuario, email, password, curso, data_nascimento, cpf, id e periodo são obrigatórios"}, 400
+    # Verificar se o CPF já existe no banco de dados
+    if mongo.db.usuarios_proj_agil.find_one(filter={"cpf": cpf}):
+        return {"error": "Id já existe"}, 409
+    # Gerar um hash SHA-256 da senha
+    hashed_password = hash_password(password)
+    # Criar um dicionário contendo os dados do usuário
     usuario = {
-      "cpf": "9999999999",
-      "email": "gabriel@gmail.com",
-      "senha": "123456",
-      "curso": "Ciência da Computação",
-      "data_nascimento": "17/02/2002",
-      "entidades": [
-        "ALESP",
-        "ASD"
-        "ASDASDASD",
-        "ASDASDASDASDASD"
-      ],
-      "id": 2,
-      "interesses": [
-        "Python",
-      ],
-      "nome": "Altran",
-      "periodo": 10,
-      "projetos": [
-        "Projeto 4",
-        "Projeto 5",
-        "Projeto 6"
-      ]
-    }
+                "nome": nome, 
+                "email": email, 
+                "password": hashed_password, 
+                "curso": curso, 
+                "data_nascimento": data_nascimento, 
+                "cpf": cpf, 
+                "id": id, 
+                "periodo": periodo, 
+                "entidades": entidades, 
+                "interesses": interesses, 
+                "projetos": projetos
+            }
     # Insere o usuário no banco de dados MongoDB
     mongo.db.usuarios_proj_agil.insert_one(usuario)
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
-    return {"mensagem": "Usuário adicionado com sucesso"}, 201
+    return jsonify({"msg": "Usuário criado com sucesso!"}), 201
 
 @app.route('/entidades', methods=['POST'])
+# Função para adicionar uma nova entidade
 def adicionar_entidade():
-    # Define os dados do usuário a serem adicionados
+    # Obter os dados do corpo da solicitação
+    nome = request.json.get("nome", "")
+    email = request.json.get("email", "")
+    password = request.json.get("password", "")
+    apresentacao = request.json.get("apresentacao", "")
+    area_atuacao = request.json.get("area_atuacao", "")
+    data_criacao = request.json.get("data_criacao", "")
+    id = request.json.get("id", "")
+    info_contato = request.json.get("info_contato", {})
+    presidente = request.json.get("presidente", "")
+    projetos = request.json.get("projetos", [])
+    vice_presidente = request.json.get("vice_presidente", "")
+    # Verificar se os campos obrigatórios foram fornecidos
+    if not nome or not email or not password or not apresentacao or not area_atuacao or not data_criacao or not id or not presidente or not vice_presidente:
+        return {"error": "Nome, email, password, apresentacao, area_atuacao, data_criacao, id, presidente e vice_presidente são obrigatórios"}, 400
+    # Verificar se o nome já existe no banco de dados
+    if mongo.db.entidades_proj_agil.find_one(filter={"nome": nome}):
+        return {"error": "Esse nome já existe"}, 409
+    # Criar um dicionário contendo os dados da entidade
     entidade = {
-            "email": "entidade@gmail.com",
-            "senha": "123456",
-            "apresentacao": "Entidade de teste 2",
-            "area_atuacao": "557.243.189-49",
-            "data_criacao": "17/02/2001",
-            "id": 1,
-            "info_contato": {
-                "email": "abc@gmail.com",
-                "linkedin": "linkedin.com",
-                "telefone": "123456789"
-            },
-            "nome": "Entidade",
-            "presidente": 'Gabriel Prady',
-            "projetos": [
-                "Projeto 1",
-                "Projeto 2",
-                "Projeto 3"
-            ],
-            "vice_presidente": "Engenharia de Software"
+            "email": email,
+            "password": password,
+            "nome": nome,
+            "apresentacao": apresentacao,
+            "area_atuacao": area_atuacao,
+            "data_criacao": data_criacao,
+            "id": id,
+            "info_contato": info_contato,
+            "presidente": presidente,
+            "projetos": projetos,
+            "vice_presidente": vice_presidente
         }
-    # Insere o usuário no banco de dados MongoDB
+    # Insere a entidade no banco de dados MongoDB
     mongo.db.entidades_proj_agil.insert_one(entidade)
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
     return {"mensagem": "Entidade adicionada com sucesso"}, 201
-
-@app.route('/empresas', methods=['POST'])
-def adicionar_empresas():
-    empresa = request.json
-    nome = empresa.get("nome", "")
-    email = empresa.get("email", "")
-    senha = empresa.get("senha", "")
-    apresentacao = empresa.get("apresentacao", "")
-    cargo = empresa.get("cargo", "")
-    cnpj = empresa.get("cnpj", "")
-    email = empresa.get("email", "")
-    celular = empresa.get("celular", "")
-    linkedin = empresa.get("linkedin ", "")
-    site = empresa.get("site", "")
-    data_criacao = date.today()
-
-    if not nome or not apresentacao or not cargo or not cnpj or not email or not celular or not linkedin or not site:
-        return {"error": "Nome, apresentacao, cargo, cnpj, email, celular, linkedin e site são obrigatórios"}, 400
-    
-    if mongo.db.usuarios_aps_5.find_one(filter={"cnpj": cnpj}):
-        return {"error": "Id já existe"}, 409  
-    
-    empresa = {
-            "email": email,
-            "senha": senha,
-            "nome": nome,
-            "apresentacao": apresentacao,
-            "cargo": cargo,
-            "cnpj": cnpj,
-            "email": email,
-            "data_criacao": data_criacao,
-            "info_contato": {
-                "celular": celular,
-                "linkedin": linkedin,
-                "site": site
-            },
-        }
-    try:
-        # Insere o usuário no banco de dados MongoDB
-        mongo.db.recrutadores_proj_agil.insert_one(empresa)
-    except:
-        return {"error": "Dados inválidos"}, 400
-    
-    # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
-    return {"mensagem": "Empresa adicionada com sucesso"}, 201
 
 @app.route('/usuarios', methods=['POST'])
 def solicitar_recuperacao():
    # Obter o e-mail do corpo da solicitação
    dados = request.json
    email_usuario = dados.get('email')
-  
+    # Verificar se o e-mail foi fornecido
    if not email_usuario:
        return {"erro": "Nenhum e-mail fornecido"}, 400
-
-
    # Procurar usuário no banco de dados pelo e-mail
    usuario = mongo.db.usuarios.find_one({"email": email_usuario})
-
-
    if usuario:
        # Definir o assunto e a mensagem do e-mail
        assunto = "Recuperação de Senha"
-       mensagem = f"Sua senha é: {usuario['senha']}"
-
-
+       mensagem = f"Sua senha é: {usuario['password']}"
        # Enviar e-mail através do endpoint enviar_email
        try:
            enviar_email(email_usuario, assunto, mensagem)
@@ -430,6 +327,20 @@ def solicitar_recuperacao():
    else:
        # E-mail não encontrado no banco de dados
        return {"erro": "E-mail não encontrado"}, 404
+   
 
-if __name__:
+# Rota pública que não requer autenticação
+@app.route('/')
+def public_route():
+    """Rota pública que não requer autenticação."""
+    return {"msg": "Página pública"}
+
+# Rota protegida que requer autenticação
+@app.route('/secret')
+@requires_auth
+def secret_page():
+    """Rota protegida que requer autenticação."""
+    return {"msg": "Você está autenticado e pode acessar esta página protegida"}
+
+if __name__ == '__main__':
     app.run(debug=True)
