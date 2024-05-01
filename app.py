@@ -310,4 +310,4 @@ def secret_page():
     return {"msg": "Você está autenticado e pode acessar esta página protegida"}
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
