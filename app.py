@@ -4,6 +4,8 @@ from datetime import date
 import os
 from auth import not_authenticated, hash_password
 from functools import wraps
+import hashlib
+
 # Aplicação Flask e Mongo
 app = Flask(__name__)
 app.config["MONGO_URI"] = "mongodb+srv://admin:admin@cluster0.hmjqwho.mongodb.net/projeto1_agil"
@@ -295,10 +297,10 @@ def adicionar_entidade():
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
     return {"mensagem": "Entidade adicionada com sucesso"}, 201
 
-#não funciona e não faz sentido
+
 @app.route('/senha', methods=['GET'])
 def solicitar_recuperacao():
-    # Obter o e-mail do corpo da solicitação
+    # Obter o e-mail da url da solicitação
     email_usuario = request.args.get('email', '')
   
     if not email_usuario:
@@ -307,12 +309,17 @@ def solicitar_recuperacao():
     if not mongo.db.usuarios.find_one({"email": email_usuario}):
         return {"error": "Usuário não existe"}, 404
 
-    # Enviar e-mail através do endpoint enviar_email
+    # Recuperar a senha do usuário
     try:
-        usuario = list(mongo.db.usuarios.find_one({"email": email_usuario}))
-        return usuario, 200
-    except Exception as e:
-        return {"erro": "Erro ao enviar e-mail"}, 500
+        usuario = mongo.db.usuarios.find_one({"email": email_usuario}, {"_id": 0})
+
+        resp={
+            "usuario": usuario,
+        }
+
+        return resp, 200
+    except:
+        return {"erro": "Erro no sistema"}, 500
 
 # Rota pública que não requer autenticação
 @app.route('/')
