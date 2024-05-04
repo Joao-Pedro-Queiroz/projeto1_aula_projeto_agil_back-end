@@ -327,7 +327,7 @@ def get_all_mensagens():
     dados_mensagens = mongo.db.mensagens.find(filtro, projecao)
     # Cria uma resposta JSON contendo os usuários encontrados
     resp = {
-        "entidades": list(dados_mensagens),
+        "mensagens": list(dados_mensagens),
     }
     # Retorna a resposta JSON e o código de status 200 (OK)
     return resp, 200
