@@ -65,7 +65,7 @@ def adicionar_usuario():
 
     # Verificar se os campos obrigatórios foram fornecidos
     if not nome or not email or not password or not curso or not data_nascimento or not cpf or not periodo or not interesses:
-        return {"error": "Nome, usuario, email, password, curso, data_nascimento, cpf, id e periodo são obrigatórios"}, 400
+        return {"error": "Nome, usuario, email, password, curso, data_nascimento, cpf e periodo são obrigatórios"}, 400
     
     # Verificar se o CPF já existe no banco de dados
     if mongo.db.usuarios.find_one(filter={"cpf": cpf}):
@@ -185,7 +185,7 @@ def adicionar_entidade():
 
     # Verificar se os campos obrigatórios foram fornecidos
     if not nome or not email or not password or not apresentacao or not area_atuacao or not data_criacao or not presidente or not vice_presidente:
-        return {"error": "Nome, email, password, apresentacao, area_atuacao, data_criacao, id, presidente e vice_presidente são obrigatórios"}, 400
+        return {"error": "Nome, email, password, apresentacao, area_atuacao, data_criacao, presidente e vice_presidente são obrigatórios"}, 400
     
     # Verificar se o nome já existe no banco de dados
     if mongo.db.entidades.find_one(filter={"nome": nome}):
@@ -282,6 +282,55 @@ def remover_entidade(nome):
     mongo.db.entidades.delete_one(filtro)
     # Retorna uma mensagem de sucesso e o código de status 200 (OK)
     return {"mensagem": "Entidade removida com sucesso"}, 200
+
+# CRUD MENSAGEM
+
+@app.route('/mensagens', methods=['POST'])
+# Função para adicionar uma nova entidade
+def adicionar_mensagem():
+    # Obter os dados do corpo da solicitação
+    email_destinatário = request.json.get("email_destinatário", "")
+    email_remetente = request.json.get("email_remetente", "")
+    assunto = request.json.get("assunto", "")
+    mensagem = request.json.get("mensagem", "")
+
+    # Verificar se os campos obrigatórios foram fornecidos
+    if not email_destinatário or not email_remetente or not assunto or not mensagem:
+        return {"error": "email_destinatário, email_remetente, assunto, mensagem"}, 400
+    
+    # Criar um dicionário contendo os dados da entidade
+    mensagem = {
+            "email_destinatário": email_destinatário,
+            "email_remetente": email_remetente,
+            "assunto": assunto,
+            "mensagem": mensagem,
+        }
+    
+    # Insere a entidade no banco de dados MongoDB
+    mongo.db.mensagens.insert_one(mensagem)
+    # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
+    return {"mensagem": "Entidade adicionada com sucesso"}, 201
+
+
+@app.route('/entidades', methods=['GET'])
+def get_all_entidades():
+    email = request.args.get('enail', '')
+
+    if email:
+        filtro = {"email": email}
+    else:
+        filtro = {}
+    
+    # Define uma projeção para não incluir o campo "_id" nos resultados
+    projecao = {"_id": 0}
+    # Recupera os dados dos usuários do banco de dados MongoDB usando o filtro e a projeção definidos
+    dados_mensagens = mongo.db.mensagens.find(filtro, projecao)
+    # Cria uma resposta JSON contendo os usuários encontrados
+    resp = {
+        "entidades": list(dados_mensagens),
+    }
+    # Retorna a resposta JSON e o código de status 200 (OK)
+    return resp, 200
 
 
 @app.route('/senha', methods=['GET'])
