@@ -312,8 +312,8 @@ def adicionar_mensagem():
     return {"mensagem": "Entidade adicionada com sucesso"}, 201
 
 
-@app.route('/entidades', methods=['GET'])
-def get_all_entidades():
+@app.route('/mensagens', methods=['GET'])
+def get_all_mensagens():
     email = request.args.get('enail', '')
 
     if email:
