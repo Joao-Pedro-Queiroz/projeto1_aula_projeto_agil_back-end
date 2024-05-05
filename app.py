@@ -317,7 +317,7 @@ def adicionar_mensagem():
 
 @app.route('/mensagens', methods=['GET'])
 def get_all_mensagens():
-    email = request.args.get('enail', '')
+    email = request.args.get('email', '')
 
     if email:
         filtro = {"email": email}
