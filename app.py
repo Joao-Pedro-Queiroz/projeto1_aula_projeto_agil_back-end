@@ -298,6 +298,9 @@ def adicionar_mensagem():
     if not email_destinatário or not email_remetente or not assunto or not mensagem:
         return {"error": "email_destinatário, email_remetente, assunto, mensagem"}, 400
     
+    if not mongo.db.usuarios.find_one(filter={"email": email_remetente}) or not mongo.db.usuarios.find_one(filter={"email": email_destinatário}):
+        return {"error": "Usuário não encontrado"}, 404
+
     # Criar um dicionário contendo os dados da entidade
     mensagem = {
             "email_destinatário": email_destinatário,
