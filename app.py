@@ -320,7 +320,7 @@ def get_all_mensagens():
     email = request.args.get('email', '')
 
     if email:
-        filtro = {"email": email}
+        filtro = {"email_destinatário": email}
     else:
         filtro = {}
     
