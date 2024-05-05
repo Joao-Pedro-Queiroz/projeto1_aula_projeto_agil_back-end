@@ -317,13 +317,7 @@ def adicionar_mensagem():
 
 @app.route('/mensagens', methods=['GET'])
 def get_all_mensagens():
-    email = request.args.get('email', '')
-
-    if email:
-        filtro = {"email_destinatário": email}
-    else:
-        filtro = {}
-    
+    filtro = {}
     # Define uma projeção para não incluir o campo "_id" nos resultados
     projecao = {"_id": 0}
     # Recupera os dados dos usuários do banco de dados MongoDB usando o filtro e a projeção definidos
