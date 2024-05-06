@@ -325,7 +325,7 @@ def remover_entidade(nome):
         return {"erro": "Erro no sistema"}, 500
     else: # Se os dados do usuário forem encontrados
         if dados_entidades == []:# Se o usuário não for encontrado, retorne um erro 404 (Não encontrado)
-            return {"erro": "Usuário não encontrado"}, 404
+            return {"erro": "Entidade não encontrado"}, 404
         else: # Se o usuário for encontrado
             try:
                 # Remove o usuário do banco de dados MongoDB
@@ -369,7 +369,7 @@ def adicionar_mensagem():
         return {"error": "Dados inválidos"}, 400
     
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
-    return {"mensagem": "Entidade adicionada com sucesso"}, 201
+    return {"mensagem": "Mensagem adicionada com sucesso"}, 201
 
 
 @app.route('/mensagens', methods=['GET'])
