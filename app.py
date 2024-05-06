@@ -88,19 +88,27 @@ def adicionar_usuario():
                 "projetos": projetos
             }
     
-    # Insere o usuário no banco de dados MongoDB
-    mongo.db.usuarios.insert_one(usuario)
+    try:
+        # Insere o usuário no banco de dados MongoDB
+        mongo.db.usuarios.insert_one(usuario)
+    except:
+        return {"error": "Dados inválidos"}, 400
+    
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
     return jsonify({"msg": "Usuário criado com sucesso!"}), 201
 
 
 @app.route('/usuarios', methods=['GET'])
 def get_all_users():
-    filtro = {}
-    # Define uma projeção para não incluir o campo "_id" nos resultados
-    projecao = {"_id": 0}
-    # Recupera os dados dos usuários do banco de dados MongoDB usando o filtro e a projeção definidos
-    dados_usuarios = mongo.db.usuarios.find(filtro, projecao)
+    try:
+        filtro = {}
+        # Define uma projeção para não incluir o campo "_id" nos resultados
+        projecao = {"_id": 0}
+        # Recupera os dados dos usuários do banco de dados MongoDB usando o filtro e a projeção definidos
+        dados_usuarios = mongo.db.usuarios.find(filtro, projecao)
+    except:
+        return {"error": "Erro no sistema"}, 500
+
     # Cria uma resposta JSON contendo os usuários encontrados
     resp = {
         "usuarios": list(dados_usuarios),
@@ -111,14 +119,18 @@ def get_all_users():
 
 @app.route('/usuarios/<string:nome>', methods=['GET'])
 def get_user_by_name(nome):
-    # Define um filtro para encontrar o usuário com o nome especificado
-    filtro = {
-        "nome": nome
-    }
-    # Define uma projeção para não incluir o campo "_id" nos resultados
-    projecao = {"_id": 0}
-    # Recupera os dados do usuário do banco de dados MongoDB usando o filtro e a projeção definidos
-    dados_usuarios = mongo.db.usuarios.find(filtro, projecao)
+    try:
+        # Define um filtro para encontrar o usuário com o nome especificado
+        filtro = {
+            "nome": nome
+        }
+        # Define uma projeção para não incluir o campo "_id" nos resultados
+        projecao = {"_id": 0}
+        # Recupera os dados do usuário do banco de dados MongoDB usando o filtro e a projeção definidos
+        dados_usuarios = mongo.db.usuarios.find(filtro, projecao)
+    except:
+        return {"erro": "Erro no sistema"}, 500
+    
     # Cria uma resposta JSON contendo o usuário encontrado
     resp = {
         "usuario": list(dados_usuarios),
@@ -129,9 +141,9 @@ def get_user_by_name(nome):
 
 @app.route('/usuarios/<string:email>', methods=['PUT'])
 def editar_usuario(email):
-    # Define um filtro para encontrar o usuário com o e-mail especificado
-    filtro = {"email": email}
     try: # Tente acessar o banco de dados para recuperar os dados do usuário
+        # Define um filtro para encontrar o usuário com o e-mail especificado
+        filtro = {"email": email}
         # Define uma projeção para não incluir o campo "_id" nos resultados
         projecao = {"_id": 0}
         # Recupera os dados do usuário do banco de dados MongoDB usando o filtro e a projeção definidos
@@ -157,14 +169,28 @@ def editar_usuario(email):
 
 @app.route('/usuarios/<string:nome>', methods=['DELETE'])
 def remover_usuario(nome):
-    # Define um filtro para encontrar o usuário com CPF "12345678901"
-    filtro = {
-        "nome": nome
-    }
-    # Remove o usuário do banco de dados MongoDB
-    mongo.db.usuarios.delete_one(filtro)
-    # Retorna uma mensagem de sucesso e o código de status 200 (OK)
-    return {"mensagem": "Usuário removido com sucesso"}, 200
+    try: # Tente acessar o banco de dados para recuperar os dados do usuário
+        # Define um filtro para encontrar o usuário com o e-mail especificado
+        filtro = {
+                "nome": nome
+            }
+        # Define uma projeção para não incluir o campo "_id" nos resultados
+        projecao = {"_id": 0}
+        # Recupera os dados do usuário do banco de dados MongoDB usando o filtro e a projeção definidos
+        dados_usuarios = list(mongo.db.usuarios.find(filtro, projecao))
+    except: # Se ocorrer um erro ao acessar o banco de dados, retorne um erro 500 (Erro interno do servidor)
+        return {"erro": "Erro no sistema"}, 500
+    else: # Se os dados do usuário forem encontrados
+        if dados_usuarios == []:# Se o usuário não for encontrado, retorne um erro 404 (Não encontrado)
+            return {"erro": "Usuário não encontrado"}, 404
+        else: # Se o usuário for encontrado
+            try:
+                # Remove o usuário do banco de dados MongoDB
+                mongo.db.usuarios.delete_one(filtro)
+            except:
+                return {"erro": "Dados inválidos"}, 400
+            # Retorna uma mensagem de sucesso e o código de status 200 (OK)
+            return {"mensagem": "Usuário removido com sucesso"}, 200
 
 # CRUD ENTIDADES
 
@@ -205,19 +231,27 @@ def adicionar_entidade():
             "vice_presidente": vice_presidente
         }
     
-    # Insere a entidade no banco de dados MongoDB
-    mongo.db.entidades.insert_one(entidade)
+    try:
+        # Insere a entidade no banco de dados MongoDB
+        mongo.db.entidades.insert_one(entidade)
+    except:
+        return {"error": "Dados inválidos"}, 400
+    
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
     return {"mensagem": "Entidade adicionada com sucesso"}, 201
 
 
 @app.route('/entidades', methods=['GET'])
 def get_all_entidades():
-    filtro = {}
-    # Define uma projeção para não incluir o campo "_id" nos resultados
-    projecao = {"_id": 0}
-    # Recupera os dados dos usuários do banco de dados MongoDB usando o filtro e a projeção definidos
-    dados_entidades = mongo.db.entidades.find(filtro, projecao)
+    try:
+        filtro = {}
+        # Define uma projeção para não incluir o campo "_id" nos resultados
+        projecao = {"_id": 0}
+        # Recupera os dados dos usuários do banco de dados MongoDB usando o filtro e a projeção definidos
+        dados_entidades = mongo.db.entidades.find(filtro, projecao)
+    except:
+        return {"error": "Erro no sistema"}, 500
+    
     # Cria uma resposta JSON contendo os usuários encontrados
     resp = {
         "entidades": list(dados_entidades),
@@ -228,14 +262,18 @@ def get_all_entidades():
 
 @app.route('/entidades/<string:nome>', methods=['GET'])
 def get_entidade_by_name(nome):
-    # Define um filtro para encontrar a entidade com o nome especificado
-    filtro = {
-        "nome": nome
-    }
-    # Define uma projeção para não incluir o campo "_id" nos resultados
-    projecao = {"_id": 0}
-    # Recupera os dados da entidade do banco de dados MongoDB usando o filtro e a projeção definidos
-    dados_entidades = mongo.db.entidades.find(filtro, projecao)
+    try:
+        # Define um filtro para encontrar a entidade com o nome especificado
+        filtro = {
+            "nome": nome
+        }
+        # Define uma projeção para não incluir o campo "_id" nos resultados
+        projecao = {"_id": 0}
+        # Recupera os dados da entidade do banco de dados MongoDB usando o filtro e a projeção definidos
+        dados_entidades = mongo.db.entidades.find(filtro, projecao)
+    except:
+        return {"error": "Erro no sistema"}, 500
+    
     # Cria uma resposta JSON contendo a entidade encontrada
     resp = {
         "entidade": list(dados_entidades),
@@ -274,14 +312,29 @@ def editar_entidade(email):
 
 @app.route('/entidades/<string:nome>', methods=['DELETE'])
 def remover_entidade(nome):
-    # Define um filtro para encontrar a entidade com CNPJ "12345678901234"
-    filtro = {
-        "nome": nome
-    }
-    # Remove a entidade do banco de dados MongoDB
-    mongo.db.entidades.delete_one(filtro)
-    # Retorna uma mensagem de sucesso e o código de status 200 (OK)
-    return {"mensagem": "Entidade removida com sucesso"}, 200
+    try: # Tente acessar o banco de dados para recuperar os dados do usuário
+        # Define um filtro para encontrar o usuário com o e-mail especificado
+        filtro = {
+                "nome": nome
+            }
+        # Define uma projeção para não incluir o campo "_id" nos resultados
+        projecao = {"_id": 0}
+        # Recupera os dados do usuário do banco de dados MongoDB usando o filtro e a projeção definidos
+        dados_entidades = list(mongo.db.entidades.find(filtro, projecao))
+    except: # Se ocorrer um erro ao acessar o banco de dados, retorne um erro 500 (Erro interno do servidor)
+        return {"erro": "Erro no sistema"}, 500
+    else: # Se os dados do usuário forem encontrados
+        if dados_entidades == []:# Se o usuário não for encontrado, retorne um erro 404 (Não encontrado)
+            return {"erro": "Usuário não encontrado"}, 404
+        else: # Se o usuário for encontrado
+            try:
+                # Remove o usuário do banco de dados MongoDB
+                mongo.db.entidades.delete_one(filtro)
+            except:
+                return {"erro": "Dados inválidos"}, 400
+            
+            # Retorna uma mensagem de sucesso e o código de status 200 (OK)
+            return {"mensagem": "Entidade removida com sucesso"}, 200
 
 # CRUD MENSAGEM
 
@@ -309,19 +362,27 @@ def adicionar_mensagem():
             "mensagem": mensagem,
         }
     
-    # Insere a entidade no banco de dados MongoDB
-    mongo.db.mensagens.insert_one(mensagem)
+    try:
+        # Insere a entidade no banco de dados MongoDB
+        mongo.db.mensagens.insert_one(mensagem)
+    except:
+        return {"error": "Dados inválidos"}, 400
+    
     # Retorna uma mensagem de sucesso e o código de status 201 (Criado)
     return {"mensagem": "Entidade adicionada com sucesso"}, 201
 
 
 @app.route('/mensagens', methods=['GET'])
 def get_all_mensagens():
-    filtro = {}
-    # Define uma projeção para não incluir o campo "_id" nos resultados
-    projecao = {"_id": 0}
-    # Recupera os dados dos usuários do banco de dados MongoDB usando o filtro e a projeção definidos
-    dados_mensagens = mongo.db.mensagens.find(filtro, projecao)
+    try:
+        filtro = {}
+        # Define uma projeção para não incluir o campo "_id" nos resultados
+        projecao = {"_id": 0}
+        # Recupera os dados dos usuários do banco de dados MongoDB usando o filtro e a projeção definidos
+        dados_mensagens = mongo.db.mensagens.find(filtro, projecao)
+    except:
+        return {"error": "Erro no sistema"}, 500
+    
     # Cria uma resposta JSON contendo os usuários encontrados
     resp = {
         "mensagens": list(dados_mensagens),
